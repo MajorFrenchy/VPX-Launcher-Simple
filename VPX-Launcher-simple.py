@@ -685,7 +685,9 @@ class App(tk.Tk):
         self.minsize(480, 500)
         self.configure(bg="#1a1a1a")
 
-        self.folder = load_folder()
+        # Start with no active tables folder; user must choose one first.
+        self.last_folder = load_folder()
+        self.folder: Path | None = None
         self.all_files: list[Path] = []
         self.filtered:  list[Path] = []
         self._filter_job   = None
@@ -856,6 +858,8 @@ class App(tk.Tk):
     # -----------------------------------------------------------------------
 
     def _short_path(self) -> str:
+        if self.folder is None:
+            return "Select a VPX tables folder"
         try:
             return "~/" + str(self.folder.relative_to(Path.home()))
         except Exception:
@@ -875,14 +879,30 @@ class App(tk.Tk):
     # -----------------------------------------------------------------------
 
     def pick_folder(self):
+        start_dir = self.folder or self.last_folder
         picked = filedialog.askdirectory(title="Select VPX tables folder",
-                                         initialdir=str(self.folder))
+                                         initialdir=str(start_dir))
         if picked:
             self.folder = Path(picked)
+            self.last_folder = self.folder
             save_folder(self.folder)
+            self._set_active_letter(None)
+            self.search_var.set("")
             self.refresh()
 
     def refresh(self):
+        if self.folder is None or not self.folder.is_dir():
+            self.all_files = []
+            self.filtered = []
+            self.path_lbl.config(text=self._short_path())
+            self._update_az_bar()
+            self.listbox.delete(0, tk.END)
+            self.listbox.insert(tk.END, "  Select Folder to load tables")
+            self.status.config(text="Select a VPX tables folder to begin")
+            self.title("VPX Launcher")
+            self._clear_preview()
+            return
+
         self.all_files = find_vpx_files(self.folder)
         self.path_lbl.config(text=self._short_path())
         self._update_az_bar()
@@ -896,6 +916,15 @@ class App(tk.Tk):
         self._filter_job = self.after(100, self._apply_filter)
 
     def _apply_filter(self):
+        if self.folder is None:
+            self.filtered = []
+            self.listbox.delete(0, tk.END)
+            self.listbox.insert(tk.END, "  Select Folder to load tables")
+            self.status.config(text="Select a VPX tables folder to begin")
+            self.title("VPX Launcher")
+            self._clear_preview()
+            return
+
         query = normalize(self.search_var.get())
         self.filtered = (
             [p for p in self.all_files if query in normalize(p.stem)]
