@@ -2,6 +2,10 @@
 
 A lightweight desktop launcher for Visual Pinball X tables with fast search, A-Z jump navigation, wheel-image preview, and wheel-media auto-download.
 
+## Screenshot
+
+![VPX Launcher Screenshot](https://github.com/MajorFrenchy/VPX-Launcher-Simple/blob/main/Screenshots/sh01.jpg?raw=true)
+
 ## Features
 
 - Recursively scans a folder for `.vpx` tables
